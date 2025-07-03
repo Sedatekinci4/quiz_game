@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quiz Host</title>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 400px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .correct {
+            color: green;
+            font-weight: bold;
+        }
+        .incorrect {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h2>Game Host Panel</h2>
+    <button onclick="sendQuestion()">Send Question</button>
+    <button onclick="revealAnswers()">Reveal Answers</button>
+
+    <h3>Players:</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Score</th>
+                <th>Last Answer</th>
+                <th>Answered?</th>
+            </tr>
+        </thead>
+        <tbody id="players_table">
+        </tbody>
+    </table>
+
+    <script>
+        const socket = io();
+
+        function sendQuestion() {
+            socket.emit('send_question');
+        }
+
+        function revealAnswers() {
+            socket.emit('reveal_answers');
+        }
+
+        socket.on('player_list_update', (players) => {
+            const tbody = document.getElementById('players_table');
+            tbody.innerHTML = '';
+            players.forEach(p => {
+                const tr = document.createElement('tr');
+
+                const nameTd = document.createElement('td');
+                nameTd.innerText = p.name;
+                tr.appendChild(nameTd);
+
+                const scoreTd = document.createElement('td');
+                scoreTd.innerText = p.score;
+                tr.appendChild(scoreTd);
+
+                const lastAnswerTd = document.createElement('td');
+                lastAnswerTd.innerText = p.last_answer === null || p.last_answer === undefined ? 'None' : p.last_answer;
+                if(p.last_answer === null || p.last_answer === undefined){
+                    lastAnswerTd.innerText = 'None';
+                } else {
+                    lastAnswerTd.innerText = p.last_answer;
+                }
+                tr.appendChild(lastAnswerTd);
+
+                const answeredTd = document.createElement('td');
+                answeredTd.innerText = p.answered ? 'Yes' : 'No';
+                tr.appendChild(answeredTd);
+
+                tbody.appendChild(tr);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quiz Game</title>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            padding: 0;
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        h2, h3 {
+            text-align: center;
+        }
+        #player-info {
+            display: none;
+            background-color: #e0f7e9;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        #join-section {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            width: 70%;
+            font-size: 1rem;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            margin-left: 8px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            user-select: none;
+        }
+        button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        #quiz {
+            display: none;
+            text-align: center;
+        }
+        #choices button {
+            display: block;
+            margin: 10px auto;
+            width: 90%;
+            max-width: 300px;
+        }
+        .selected {
+            background-color: #4CAF50 !important;
+            color: white;
+        }
+        #timer {
+            font-weight: bold;
+            color: red;
+            margin-top: 10px;
+        }
+        #result {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+<body>
+    <h2>Join the Quiz</h2>
+
+    <div id="player-info">
+        Hello, <span id="player-name"></span>! Your score: <span id="player-score">0</span>
+    </div>
+
+    <div id="join-section">
+        <input type="text" id="name" placeholder="Enter your name" autocomplete="off" />
+        <button id="join-btn" onclick="joinGame()">Join</button>
+    </div>
+
+    <div id="quiz">
+        <h3 id="question"></h3>
+        <div id="choices"></div>
+        <div id="timer"></div>
+    </div>
+
+    <div id="result"></div>
+
+<script>
+    const socket = io();
+    let selectedButton = null;
+    let playerName = '';
+    let playerScore = 0;
+
+    function joinGame() {
+        const nameInput = document.getElementById('name');
+        playerName = nameInput.value.trim();
+        if (!playerName) {
+            alert("Please enter your name.");
+            return;
+        }
+        socket.emit('join', { name: playerName });
+        // Gizle join, göster player info ve quiz
+        document.getElementById('join-section').style.display = 'none';
+        const infoDiv = document.getElementById('player-info');
+        infoDiv.style.display = 'block';
+        document.getElementById('player-name').innerText = playerName;
+        document.getElementById('quiz').style.display = 'block';
+    }
+
+    socket.on('player_list_update', (players) => {
+        // Kendi skorunu güncelle
+        const me = players.find(p => p.name === playerName);
+        if (me) {
+            playerScore = me.score;
+            document.getElementById('player-score').innerText = playerScore;
+        }
+    });
+
+    socket.on('show_question', (q) => {
+        document.getElementById('result').innerHTML = "";
+        document.getElementById('question').innerText = q.question;
+        const choicesDiv = document.getElementById('choices');
+        choicesDiv.innerHTML = "";
+        selectedButton = null;
+
+        q.choices.forEach(c => {
+            const btn = document.createElement('button');
+            btn.innerText = c;
+            btn.onclick = () => {
+                if (selectedButton) {
+                    selectedButton.classList.remove('selected');
+                }
+                btn.classList.add('selected');
+                selectedButton = btn;
+                socket.emit('submit_answer', { answer: c });
+                clearInterval(countdownInterval);
+                document.getElementById('timer').innerText = '';
+            };
+            choicesDiv.appendChild(btn);
+        });
+
+        // Timer başlat
+        let timeLeft = 10;
+        document.getElementById('timer').innerText = `Time left: ${timeLeft}`;
+        countdownInterval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                document.getElementById('timer').innerText = "Time's up!";
+            } else {
+                document.getElementById('timer').innerText = `Time left: ${timeLeft}`;
+            }
+        }, 1000);
+    });
+
+    socket.on('reveal_answers', (results) => {
+        let html = "<h3>Results:</h3><ul style='list-style:none; padding:0;'>";
+        for (let name in results) {
+            const r = results[name];
+            html += `<li><b>${name}</b>: ${r.answer} (${r.correct ? '✅' : '❌'}) - Score: ${r.score}</li>`;
+        }
+        html += "</ul>";
+        document.getElementById('result').innerHTML = html;
+    });
+</script>
+</body>
+</html>
