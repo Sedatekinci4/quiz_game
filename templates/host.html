@@ -30,6 +30,7 @@
     <h2>Game Host Panel</h2>
     <button onclick="sendQuestion()">Send Question</button>
     <button onclick="revealAnswers()">Reveal Answers</button>
+    <button onclick="resetGame()">Reset Game</button>
 
     <h3>Players:</h3>
     <table>
@@ -54,6 +55,12 @@
 
         function revealAnswers() {
             socket.emit('reveal_answers');
+        }
+
+        function resetGame() {
+            if (confirm("Are you sure you want to reset the game?")) {
+        socket.emit('reset_game');
+            }
         }
 
         socket.on('player_list_update', (players) => {

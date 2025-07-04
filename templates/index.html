@@ -77,6 +77,24 @@
             text-align: center;
             font-size: 1.1rem;
         }
+        #leaderboard {
+            margin-top: 20px;
+            display: none;
+            text-align: center;
+        }
+        #leaderboard table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        #leaderboard th, #leaderboard td {
+            border: 1px solid #ccc;
+            padding: 6px;
+            text-align: center;
+        }
+        #leaderboard th {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 <body>
@@ -98,9 +116,22 @@
     </div>
 
     <div id="result"></div>
+    <div id="leaderboard"></div>
+    <!-- ✅ Leaderboard section -->
+<!--    <div id="leaderboard">-->
+<!--        <h3>Leaderboard</h3>-->
+<!--        <table>-->
+<!--            <thead>-->
+<!--                <tr><th>Name</th><th>Score</th></tr>-->
+<!--            </thead>-->
+<!--            <tbody id="leaderboard-body">-->
+<!--            </tbody>-->
+<!--        </table>-->
+<!--    </div>-->
 
 <script>
     const socket = io();
+    let countdownInterval = null;
     let selectedButton = null;
     let playerName = '';
     let playerScore = 0;
@@ -168,13 +199,38 @@
     });
 
     socket.on('reveal_answers', (results) => {
-        let html = "<h3>Results:</h3><ul style='list-style:none; padding:0;'>";
-        for (let name in results) {
-            const r = results[name];
-            html += `<li><b>${name}</b>: ${r.answer} (${r.correct ? '✅' : '❌'}) - Score: ${r.score}</li>`;
+    let html = "<h3>Results:</h3><ul style='list-style:none; padding:0;'>";
+    for (let name in results) {
+        const r = results[name];
+        html += `<li><b>${name}</b>: ${r.answer} (${r.correct ? '✅' : '❌'}) – Score: ${r.score}</li>`;
+    }
+    html += "</ul>";
+    document.getElementById('result').innerHTML = html;
+});
+
+socket.on('leaderboard', (data) => {
+    const rows = data.map(p =>
+        `<li><b>${p.name}</b>: ${p.score} pts</li>`
+    ).join('');
+    document.getElementById('leaderboard').innerHTML =
+        `<h3>Leaderboard</h3><ul style='list-style:none; padding:0;'>${rows}</ul>`;
+});
+
+    socket.on('reset', () => {
+        document.getElementById('player-score').innerText = "0";
+        document.getElementById('result').innerHTML = "";
+        const leaderboard = document.getElementById('leaderboard');
+        if (leaderboard) leaderboard.innerHTML = "";
+
+        /*  eski sayaç varsa durdur */
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
         }
-        html += "</ul>";
-        document.getElementById('result').innerHTML = html;
+        document.getElementById('timer').innerText = '';
+        document.getElementById('result').innerHTML = '';
+        document.getElementById('leaderboard').innerHTML = '';
+        document.getElementById('player-score').innerText = '0';
     });
 </script>
 </body>

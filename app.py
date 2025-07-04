@@ -3,6 +3,7 @@ eventlet.monkey_patch()
 
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
+import random
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -33,6 +34,10 @@ questions = [
         'answer': 'Orwell'
     }
 ]
+
+# questions zaten yukarıda tanımlı
+original_questions = questions.copy()  # ilk tanımda kopyala
+random.shuffle(questions)             # oyuna başlarken karıştır
 
 @app.route('/')
 def index():
@@ -113,10 +118,42 @@ def reveal():
             'correct': p['correct'],
             'score': p['score']
         }
-
     socketio.emit('reveal_answers', results)
+
+
+    # 💡 Emit leaderboard
+    leaderboard = sorted(
+        [{'name': p['name'], 'score': p['score']} for p in players.values()],
+        key=lambda x: x['score'], reverse=True
+    )
+    socketio.emit('leaderboard', leaderboard)
+
     current_question += 1
     question_active = False
+    broadcast_player_list()
+
+
+@socketio.on('reset_game')
+def reset_game():
+    global current_question, question_active, questions
+    current_question = 0
+    question_active = False
+    for p in players.values():
+        p['score'] = 0
+        p.pop('last_answer', None)
+        p.pop('correct', None)
+    questions = original_questions.copy()
+    random.shuffle(questions)
+
+    # Oyunculara da reset sinyali gönder
+    socketio.emit('reset')
+
+    # Oyunculara bilgi amaçlı boş soru gönder (ekranı temizlemek için)
+    socketio.emit('show_question', {
+        'question': 'Game Reset! Click Send Question to begin.',
+        'choices': []
+    })
+
     broadcast_player_list()
 
 @socketio.on('disconnect')
