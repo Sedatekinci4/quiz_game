@@ -61,9 +61,39 @@ def broadcast_player_list():
 
 @socketio.on('join')
 def handle_join(data):
+    print(data)
+    print('im hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee')
     name = data['name']
-    players[request.sid] = {'name': name, 'score': 0}
-    print(f"{name} joined.")
+    sid = request.sid
+
+    # Check if player with this name already exists (old_sid and data)
+    old_sid = None
+    old_data = None
+    print(players)
+    for s, p in players.items():
+        print(p['name'])
+        print(name)
+        if p['name'] == name:
+            old_sid = s
+            old_data = p
+            print(old_data)
+            break
+
+    if old_data:
+        # Player existed: update players dict with new sid, keep old score
+        players[sid] = old_data
+        if old_sid != sid:
+            del players[old_sid]
+        print(f"{name} re-joined with score {old_data['score']}")
+    else:
+        # New player, add fresh
+        players[sid] = {'name': name, 'score': 0}
+        print(f"{name} joined as new player")
+
+    # Send current question if active
+    if question_active:
+        emit('show_question', questions[current_question], room=sid)
+
     broadcast_player_list()
 
 @socketio.on('send_question')

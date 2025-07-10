@@ -144,6 +144,11 @@
             alert("Please enter your name.");
             return;
         }
+
+        // Save name to localStorage
+        localStorage.setItem('quizPlayerName', playerName);
+        localStorage.setItem('quizPlayerScore', playerScore);
+
         socket.emit('join', { name: playerName });
         // Gizle join, göster player info ve quiz
         document.getElementById('join-section').style.display = 'none';
@@ -237,6 +242,23 @@ socket.on('leaderboard', (data) => {
         document.getElementById('leaderboard').innerHTML = '';
         document.getElementById('player-score').innerText = '0';
     });
+
+    window.onload = () => {
+    const storedName = localStorage.getItem('quizPlayerName');
+    const savedScore = localStorage.getItem('quizPlayerScore');
+    if (storedName) {
+        playerName = storedName;
+        playerScore = savedScore;
+        socket.emit('join', { name: playerName, score: playerScore});
+
+        document.getElementById('join-section').style.display = 'none';
+        const infoDiv = document.getElementById('player-info');
+        infoDiv.style.display = 'block';
+        document.getElementById('player-name').innerText = playerName;
+        document.getElementById('player-score').innerText = playerScore;
+        document.getElementById('quiz').style.display = 'block';
+        }
+    };
 </script>
 </body>
 </html>
