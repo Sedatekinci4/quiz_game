@@ -89,11 +89,17 @@ def handle_answer(data):
     global question_active
     answer = data['answer']
     sid = request.sid
+
     if sid in players and question_active:
-        players[sid]['last_answer'] = answer
-        correct_answer = questions[current_question]['answer']
-        players[sid]['correct'] = (answer == correct_answer)
-        broadcast_player_list()
+        # Check if player already submitted
+        if 'last_answer' not in players[sid]:
+            players[sid]['last_answer'] = answer
+            correct_answer = questions[current_question]['answer']
+            players[sid]['correct'] = (answer == correct_answer)
+            broadcast_player_list()
+        else:
+            # Optional: emit a message saying "You already answered"
+            socketio.emit('answer_locked', {'message': 'You have already submitted an answer.'}, to=sid)
 
 @socketio.on('reveal_answers')
 def reveal():

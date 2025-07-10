@@ -64,7 +64,7 @@
             max-width: 300px;
         }
         .selected {
-            background-color: #4CAF50 !important;
+            background-color: #f44336 !important;
             color: white;
         }
         #timer {
@@ -131,6 +131,7 @@
 
 <script>
     const socket = io();
+    let hasSubmitted = false;
     let countdownInterval = null;
     let selectedButton = null;
     let playerName = '';
@@ -162,6 +163,8 @@
     });
 
     socket.on('show_question', (q) => {
+        hasSubmitted = false;
+
         document.getElementById('result').innerHTML = "";
         document.getElementById('question').innerText = q.question;
         const choicesDiv = document.getElementById('choices');
@@ -172,12 +175,14 @@
             const btn = document.createElement('button');
             btn.innerText = c;
             btn.onclick = () => {
+                if (hasSubmitted) return;
                 if (selectedButton) {
                     selectedButton.classList.remove('selected');
                 }
                 btn.classList.add('selected');
                 selectedButton = btn;
                 socket.emit('submit_answer', { answer: c });
+                hasSubmitted = true;
                 clearInterval(countdownInterval);
                 document.getElementById('timer').innerText = '';
             };
