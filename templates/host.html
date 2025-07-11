@@ -31,6 +31,7 @@
     <button onclick="sendQuestion()">Send Question</button>
     <button onclick="revealAnswers()">Reveal Answers</button>
     <button onclick="resetGame()">Reset Game</button>
+    <button onclick="autoPlay()">AutoPlay</button>
 
     <h3>Players:</h3>
     <table>
@@ -48,6 +49,7 @@
 
     <script>
         const socket = io();
+        let autoPlaying = false;
 
         function sendQuestion() {
             socket.emit('send_question');
@@ -59,7 +61,31 @@
 
         function resetGame() {
             if (confirm("Are you sure you want to reset the game?")) {
-        socket.emit('reset_game');
+                socket.emit('reset_game');
+                autoPlaying = false; // Stop autoplay if active
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function autoPlay() {
+            if (autoPlaying) {
+                autoPlaying = false;
+                alert("AutoPlay stopped.");
+                return;
+            }
+
+            autoPlaying = true;
+            while (autoPlaying) {
+                socket.emit('send_question');
+                await sleep(10000); // wait for 10 seconds
+                socket.emit('reveal_answers');
+                await sleep(1000);  // short pause between questions
+
+                // Optional: listen for event from server if there are no more questions
+                // For now, this will continue forever unless stopped manually
             }
         }
 
