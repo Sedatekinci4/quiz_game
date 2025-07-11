@@ -169,6 +169,7 @@
 
     socket.on('show_question', (q) => {
         hasSubmitted = false;
+        timeExpired = false;
 
         document.getElementById('result').innerHTML = "";
         document.getElementById('question').innerText = q.question;
@@ -180,7 +181,7 @@
             const btn = document.createElement('button');
             btn.innerText = c;
             btn.onclick = () => {
-                if (hasSubmitted) return;
+                if (hasSubmitted || timeExpired) return;
                 if (selectedButton) {
                     selectedButton.classList.remove('selected');
                 }
@@ -201,6 +202,7 @@
             timeLeft--;
             if (timeLeft <= 0) {
                 clearInterval(countdownInterval);
+                timeExpired = true;
                 document.getElementById('timer').innerText = "Time's up!";
             } else {
                 document.getElementById('timer').innerText = `Time left: ${timeLeft}`;
